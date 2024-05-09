@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from airflow.decorators import dag, task
 from airflow.providers.postgres.hooks.postgres import PostgresHook
-from airflow.providers.snowflake.hooks.snowflake import SnowFlakeHook
+from airflow.providers.snowflake.hooks.snowflake import SnowflakeHook
 
 default_args = {
     'owner': 'airflow',
@@ -33,7 +33,7 @@ def postgres_to_snowflake_etl():
     for table_name in table_names:
         @task(task_id=f'get_max_id_{table_name}')
         def get_max_primary_key(table_name: str):
-            sf_hook = SnowFlakeHook(snowFlake_conn_id='snowflake').get_conn()
+            sf_hook = SnowflakeHook(snowFlake_conn_id='snowflake').get_conn()
             with sf_hook as conn:
                 with conn.cursor() as cursor:
                     query = f'SELECT MAX(ID_{table_name}) FROM {table_name}'
@@ -45,29 +45,32 @@ def postgres_to_snowflake_etl():
             pg_hook = PostgresHook(postgres_conn_id='postgres').get_conn()
             with pg_hook.cursor() as pg_cursor:
                 primary_key = f'ID_{table_name}'
-                query = f"""SELECT column_name 
-                           FROM information_schema.columns 
-                           WHERE table_name = '{table_name}'
+                query = f"""
+                            SELECT column_name 
+                            FROM information_schema.columns 
+                            WHERE table_name = '{table_name}'
                         """
                 pg_cursor.execute(query)
                 columns = [row[0] for row in pg_cursor.fetchall()]
                 columns_list_str = ', '.join(columns)
                 placeholders = ', '.join(['%s'] * len(columns))
 
-                query = f"""SELECT {columns_list_str}
+                query = f"""
+                            SELECT {columns_list_str}
                             FROM {table_name}
                             WHERE {primary_key} = {max_id}
                         """
                 pg_cursor.execute(query)
                 rows = pg_cursor.fetchall()
 
-                sf_hook = SnowFlakeHook(snowFlake_conn_id='snowflake').get_conn()
+                sf_hook = SnowflakeHook(snowFlake_conn_id='snowflake').get_conn()
                 with sf_hook as sf_conn:
                     with sf_conn.cursor() as sf_cursor:
-                        insert_query = f"""INSERT INTO {table_name} 
-                                           ({columns_list_str})
-                                           VALUES ({placeholders})
-                                        """
+                        insert_query = f"""
+                            INSERT INTO {table_name} 
+                            ({columns_list_str})
+                            VALUES ({placeholders})
+                        """
                         for row in rows:
                             sf_cursor.execute(insert_query)
 
