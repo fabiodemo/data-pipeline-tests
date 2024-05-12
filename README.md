@@ -10,3 +10,4 @@
 
 ![image](https://github.com/fabiodemo/data-pipeline-tests/assets/39056032/9972191e-62fe-40d7-81bd-fabe202460e4)
 
+![image](https://github.com/fabiodemo/data-pipeline-tests/assets/39056032/a7b7c24a-9403-40a2-b55a-436d827b74f1)
